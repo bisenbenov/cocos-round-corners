@@ -1,0 +1,80 @@
+CCEffect %{
+  techniques:
+  - passes:
+    - vert: sprite-vs:vert
+      frag: sprite-fs:frag
+      depthStencilState:
+        depthTest: false
+        depthWrite: false
+      blendState:
+        targets:
+        - blend: true
+          blendSrc: src_alpha
+          blendDst: one_minus_src_alpha
+          blendDstAlpha: one_minus_src_alpha
+      rasterizerState:
+        cullMode: none
+      properties: &props
+        spriteTexture: { value: grey }
+        size: { value: [0, 0], editor: { type: vec2 } }
+        radius: { value: 0, editor: { type: float } }
+}%
+
+CCProgram sprite-vs %{
+  precision highp float;
+  #include <builtin/uniforms/cc-global>
+
+  in vec3 a_position;
+  in vec2 a_texCoord;
+  in vec4 a_color;
+
+  out vec4 v_color;
+  out vec2 v_uv0;
+
+  vec4 vert () {
+    vec4 pos = cc_matViewProj * vec4(a_position, 1.0);
+    v_uv0 = a_texCoord;
+    v_color = a_color;
+    return pos;
+  }
+}%
+
+CCProgram sprite-fs %{
+  precision highp float;
+
+  in vec4 v_color;
+  in vec2 v_uv0;
+
+  uniform sampler2D spriteTexture;
+
+  uniform Constant {
+    vec2 size;
+    float radius;
+  };
+
+  float inEllipse(vec2 origin, float radius_a, float radius_b, vec2 coordinate) {
+    vec2 adjusted = coordinate - origin;
+    return (adjusted.x * adjusted.x) / (radius_a * radius_a) + (adjusted.y * adjusted.y) / (radius_b * radius_b);
+  }
+
+  vec4 frag () {
+    vec4 o = texture(spriteTexture, v_uv0) * v_color;
+    vec2 uv = v_uv0 * size;
+
+    float r = radius;
+    if (uv.x < r && uv.y > size.y - r && inEllipse(vec2(r, size.y - r), r, r, uv) > 1.0) {
+      o.a = 0.0;
+    }
+    if (uv.x > size.x - r && uv.y > size.y - r && inEllipse(vec2(size.x - r, size.y - r), r, r, uv) > 1.0) {
+      o.a = 0.0;
+    }
+    if (uv.x > size.x - r && uv.y < r && inEllipse(vec2(size.x - r, r), r, r, uv) > 1.0) {
+      o.a = 0.0;
+    }
+    if (uv.x < r && uv.y < r && inEllipse(vec2(r, r), r, r, uv) > 1.0) {
+      o.a = 0.0;
+    }
+
+    return o;
+  }
+}%
