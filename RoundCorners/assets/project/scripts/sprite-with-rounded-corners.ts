@@ -1,4 +1,4 @@
-import {_decorator, CCFloat, Component, Material, Sprite, UITransform, Vec2, assetManager, EffectAsset, resources, Texture2D, SpriteFrame} from 'cc';
+import {_decorator, CCBoolean, Component, Material, Sprite, UITransform, Vec2, assetManager, EffectAsset, CCInteger} from 'cc';
 
 class Constants {
     public static SPRITE_TEXTURE: string = "spriteTexture";
@@ -9,15 +9,8 @@ class Constants {
 @_decorator.ccclass('SpriteWithRoundedCorners')
 @_decorator.executeInEditMode
 export class SpriteWithRoundedCorners extends Component {
-    @_decorator.property private _radius: number = 0;
-    @_decorator.property({type: CCFloat})
-    get radius(): number {
-        return this._radius;
-    }
-    set radius(value: number) {
-        this._radius = value;
-        this.updateProperties();
-    }
+    @_decorator.property(CCInteger) public radius: number = 0;
+    @_decorator.property(CCBoolean) private is_edit_mode: boolean;
 
     private declare _sprite: Sprite;
     private declare _material: Material;
@@ -28,6 +21,12 @@ export class SpriteWithRoundedCorners extends Component {
         this._uiTransform = this.getComponent(UITransform);
 
         this.validate();
+    }
+
+    protected update(): void {
+        if (this.is_edit_mode) {
+            this.validate();
+        }
     }
 
     private validate(): void {
